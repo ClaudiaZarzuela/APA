@@ -73,5 +73,3 @@ def export_to_txt(model, filename):
                 f.write(f"name:{param_type}\n")
                 f.write(f"values:{param_values.flatten().tolist()}\n")
             parameter_num += 1
-
-
