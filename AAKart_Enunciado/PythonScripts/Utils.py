@@ -1,5 +1,9 @@
-from skl2onnx import to_onnx
-from onnx2json import convert
+from sklearn.feature_selection import mutual_info_classif
+from sklearn.feature_selection import f_classif
+#from skl2onnx import to_onnx
+#from onnx2json import convert
+import numpy as np
+import pandas as pd
 import pickle
 import json
 
@@ -73,3 +77,27 @@ def export_to_txt(model, filename):
                 f.write(f"name:{param_type}\n")
                 f.write(f"values:{param_values.flatten().tolist()}\n")
             parameter_num += 1
+
+def cleanData(X, y):
+    #relevance = mutual_info_classif(X, y)
+    #f_statistic, p_values = f_classif(X, y)
+    
+    return X, y
+
+def load_data_csv_multi(path,x1_colum,x2_colum,x3_colum,x4_colum,x5_colum,x6_colum,x7_colum,x8_colum,x9_colum,y_colum):
+    data = pd.read_csv(path)
+    x1 = data[x1_colum].to_numpy()
+    x2 = data[x2_colum].to_numpy()
+    x3 = data[x3_colum].to_numpy()
+    x4 = data[x4_colum].to_numpy()
+    x5 = data[x5_colum].to_numpy()
+    x6 = data[x6_colum].to_numpy()
+    x7 = data[x7_colum].to_numpy()
+    x8 = data[x8_colum].to_numpy()
+    x9 = data[x9_colum].to_numpy()
+    X = np.array([x1, x2, x3, x4, x5, x6, x7, x8, x9])
+    X = X.T
+    y = data[y_colum].to_numpy()
+
+    X, y = cleanData(X, y)
+    return X, y
