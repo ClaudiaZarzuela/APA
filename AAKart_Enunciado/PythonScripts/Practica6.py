@@ -16,7 +16,7 @@ from sklearn import tree
 from sklearn.neighbors import KNeighborsClassifier
 
 # LEEMOS LOS DATOS, LOS LIMPIAMOS Y SEPARAMOS EN ENTRADAS Y SALIDA -------------------------------------------------------
-x, y, x_data= load_data_csv_multi("../ML/concatenado.csv")
+x, y, x_data= load_data_csv_multi("./ML/concatenado.csv")
 x_columns = x_data # Guardamos las columnas originales para luego mostrar las predicciones de sklearn
 
 
@@ -120,13 +120,13 @@ epsilon: establece umbral de tolerancia que detiene el entrenamiento si el cambi
 clf_0 = MLPClassifier(hidden_layer_sizes= [30,15], activation = 'logistic', alpha=0, max_iter= 500, learning_rate_init= 1, epsilon= 0.12)
 clf_0.fit(X_train, y_train)
 accu = clf_0.score(X_test, y_test)
-print("MLP de SKLearn: " + str(accu))
 
 print("Importancia de las categorías en el modelo MLPClassifier")
 result = permutation_importance(clf_0, X_test, y_test, n_repeats=10, random_state=0)
 importance_df = pd.DataFrame(result.importances_mean, index= x_columns)
 print(importance_df.head(10))
 print("\nAccuracy del modelo MLPClassifier (SKLearn): ", accu)
+print("\nNo se ha podido mejorar el accuracy del modelo cambiando los parametros, pero el max_iter puede reducirse a 500 con los mismos resultados")
 
 
 
@@ -135,7 +135,7 @@ print("-------------------------------------------------------------------------
 neigh = KNeighborsClassifier(n_neighbors=5, weights='uniform', algorithm='auto', leaf_size=30, p=2)
 neigh.fit(X_train, y_train)
 accu = neigh.score(X_test, y_test)
-print("KNN de SKLearn: " + str(accu))
+print("Accuracy del modelo KNN (SKLearn): " + str(accu))
 
 
 
