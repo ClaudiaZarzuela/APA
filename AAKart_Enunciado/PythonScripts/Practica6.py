@@ -13,6 +13,7 @@ from sklearn.metrics import classification_report
 import pandas as pd
 from sklearn.inspection import permutation_importance
 from sklearn import tree
+from sklearn.neighbors import KNeighborsClassifier
 
 # LEEMOS LOS DATOS, LOS LIMPIAMOS Y SEPARAMOS EN ENTRADAS Y SALIDA -------------------------------------------------------
 x, y, x_data= load_data_csv_multi("../ML/concatenado.csv")
@@ -22,8 +23,6 @@ x_columns = x_data # Guardamos las columnas originales para luego mostrar las pr
 
 #HACEMOS UNA COPIA DE X PARA REALIZAR EL PCA SIN AFECTAR A LOS DATOS ORIGINALES
 x_pca = x.copy()
-
-
 
 # APLICAMOS EL PCA PARA REDUCIR DIMENSIONALIDAD Y MOSTRAMOS ---------------------------------------------------------------
 #EN 2D
@@ -78,18 +77,14 @@ ax.legend()
 plt.show()
 '''
 
-
-
 #NORMALIZAMOS LA X --------------------------------------------------------------------------------------------------------
 scaler = StandardScaler()
 x = scaler.fit_transform(x)
 
 
-
 #DIVIDIMOS LOS DATOS ------------------------------------------------------------------------------------------------------
 X_train, X_test, y_train, y_test = train_test_split(x, y, test_size=0.33, random_state=0)
 categories = ["ACCELERATE", "LEFT_ACCELERATE", "RIGHT_ACCELERATE"]
-
 
 
 #ENTRENAMOS EL MODELO CON NUESTRO MLP -------------------------------------------------------------------------------------
@@ -101,16 +96,46 @@ print("\nAccuracy de nuestro MLP: ", accu)
 
 
 print("--------------------------------------------------------------------------------------------\n")
-# SKLEARN MLPCLASSIFIER CON LOS MISMOS DATOS DE ENTRADA QUE EL NUESTRO ----------------------------------------------------
-clf_0 = MLPClassifier(hidden_layer_sizes= [30,15], activation = 'logistic', alpha=0, max_iter= 2000, learning_rate_init= 1, epsilon= 0.12)
+# VERSION SKLEARN DEL MLP
+'''
+(solver: algoritmo usado para optimizar los pesos de la red {lbfgs: para pequeños datasets / sgd: para datasets grandes / adam (por defecto): generalmente recomendado})
+(learning_rate: (se usa solo si solver = sgd) controla como se ajustan los pesos durante el entrenamiento {constant: fija / invscaling: disminuye la tasa segun avanza
+   el entrenamiento / adaptive: fija, pero reduce la tasa si el rendimiento no mejora})
+(batch_size: num de muestras usadas para actualizar los pesos en cada iteracion, valores bajos son +ruidosos pero converjen rapido y grandes son +estables pero requieren +memoria)
+(tol: umbral tolerancia para la convergencia que detiene el entrenamiento si la mejora relativa de la funcion de perdida es menor que este valor, valores bajos hacen un modelo
+   mas preciso pero que requiere mas tiempo de entrenamiento y altos pueden detener el modelo antes de haber alcanzado el optimo)
+(random_state: fija la semilla para inicializar los pesos y garantizar reproducibilidad, no afecta a la calidad del modelo pero asegura resultados consistentes)
+
+hidden_layer_sizes: dupla de numero de neuronas por capa oculta, +neuronas = aprende patrones +complejos pero puede causar overfitting mucho tiempo de entrenamiento
+activation: funcion de activacion para las neuronas de las capas ocultas, afecta la capacidad del modelo para aprender relaciones no lineales{identity: sin funcion /
+   logistic: sigmoide, util para problemas binarios / tanh: tangente hiperbolica, captura relaciones no lineales mas complejas / relu (por defecto): unidad lineal 
+   rectificada, eficiente y comunmente usada}
+alpha: parametro regularizacion L2 que penaliza pesos grandes y previene el overfitting, valores altos reducen complejidad del modelo y bajos pueden permitir overfitting
+max_iter: num maximo de iteraciones para entrenar el modelo
+learning_rate_init: (se usa si solver = sgd o solver = adam) valor inicial de la tasa de aprendizaje (valores tipicos 0.0001-0.1), valores altos permiten ajustes rapidos pero 
+   pueden causar inestabilidad y bajos pueden ralentizar el aprendizaje y provocar que no converja
+epsilon: establece umbral de tolerancia que detiene el entrenamiento si el cambio absoluto en la funcion de perdida entre dos iteraciones es menor que este valor (por defecto 1e-8),
+    valores altos pueden detener el modelo antes de haber alcanzado el optimo, y bajos pueden mejorar precision a costa de ralentizar entrenamiento y posible sobreajuste
+'''
+clf_0 = MLPClassifier(hidden_layer_sizes= [30,15], activation = 'logistic', alpha=0, max_iter= 500, learning_rate_init= 1, epsilon= 0.12)
 clf_0.fit(X_train, y_train)
 accu = clf_0.score(X_test, y_test)
+print("MLP de SKLearn: " + str(accu))
 
 print("Importancia de las categorías en el modelo MLPClassifier")
 result = permutation_importance(clf_0, X_test, y_test, n_repeats=10, random_state=0)
 importance_df = pd.DataFrame(result.importances_mean, index= x_columns)
 print(importance_df.head(10))
 print("\nAccuracy del modelo MLPClassifier (SKLearn): ", accu)
+
+
+
+print("--------------------------------------------------------------------------------------------\n")
+# MODELO KNN DE SKLEARN --------------------------------------------------------------------------------------------------
+neigh = KNeighborsClassifier(n_neighbors=5, weights='uniform', algorithm='auto', leaf_size=30, p=2)
+neigh.fit(X_train, y_train)
+accu = neigh.score(X_test, y_test)
+print("KNN de SKLearn: " + str(accu))
 
 
 
