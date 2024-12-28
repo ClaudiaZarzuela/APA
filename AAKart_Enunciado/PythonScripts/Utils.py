@@ -82,7 +82,12 @@ def export_to_txt(model, filename):
 def cleanData(data):
     data = data.drop(columns= ['karty', 'time'], errors='ignore')
     data = data.dropna()
+
+    #Limpiar salidas que no usamos
     data = data.drop(data[data["action"] == "NONE"].index)
+    data = data.drop(data[data["action"] == "BRAKE"].index)
+    data = data.drop(data[data["action"] == "LEFT_BRAKE"].index)
+    data = data.drop(data[data["action"] == "RIGHT_BRAKE"].index)
     
     return data
 
@@ -90,10 +95,11 @@ def load_data_csv_multi(path):
     data = pd.read_csv(path)
     data = cleanData(data)
 
+    x_data = data.columns[:-1]
     X = data[data.columns[:-1]].to_numpy()
     y = data[data.columns[-1]].to_numpy() 
 
-    return X, y
+    return X, y, x_data
 
 def precission(P, Y):
     TP = np.sum((P == 0) & (Y == 0))
