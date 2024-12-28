@@ -1,6 +1,8 @@
 from sklearn.feature_selection import mutual_info_classif
 from sklearn.feature_selection import f_classif
+from sklearn import metrics
 from sklearn.preprocessing import OneHotEncoder
+import matplotlib.pyplot as plt
 #from skl2onnx import to_onnx
 #from onnx2json import convert
 import numpy as np
@@ -101,24 +103,94 @@ def load_data_csv_multi(path):
 
     return X, y, x_data
 
-def precission(P, Y):
-    TP = np.sum((P == 0) & (Y == 0))
-    FP = np.sum((P == 0) & (Y != 0))
+def precission(P, Y, categories):
+    precisions = {}
+    for cls in categories:
+        TP = np.sum((P == cls) & (Y == cls))
+        FP = np.sum((P == cls) & (Y != cls))
+        precisions[cls] = TP / (TP + FP) if (TP + FP) > 0 else 0.0
+    return precisions
+   
 
-    return (TP / (TP + FP))
+def recall(P, Y, categories):
+    recalls = {}
+    for cls in categories:
+        TP = np.sum((P == cls) & (Y == cls))
+        FN = np.sum((P != cls) & (Y == cls))
+        recalls[cls] = TP / (TP + FN) if (TP + FN) > 0 else 0.0
+    return recalls
 
-def recall(P, Y):
-    TP = np.sum((P == 0) & (Y == 0))
-    FN = np.sum((P != 0) & (Y == 0))
+def accuracy(P,Y):
+	y = np.array(Y)
+	p = np.array(P)
+	return np.mean(p==y)
 
-    return (TP / (TP + FN))
+def f1_scores(P, Y, categories):
+    scores = {}
+    for cls in categories:
+        TP = np.sum((P == cls) & (Y == cls))
+        FP = np.sum((P == cls) & (Y != cls))
+        FN = np.sum((P != cls) & (Y == cls))
+        recallsCls = TP / (TP + FN) if (TP + FN) > 0 else 0.0
+        precissionCls = TP / (TP + FP) if (TP + FP) > 0 else 0.0
+        scores[cls] = 2* (precissionCls*recallsCls) /(precissionCls + recallsCls) if (precissionCls + recallsCls)> 0 else 0.0
+    return scores
 
 def one_hot_encoding(Y, categories):
     _categories = [categories]
     oneHotEncoder = OneHotEncoder(categories=_categories)
     return  oneHotEncoder.fit_transform(Y.reshape(-1,1)).toarray()
 
-def accuracy(P,Y, categories):
-	p = np.array(P)
-	y = np.array(np.array(categories)[Y])
-	return np.mean(p==y)
+
+
+'''
+Precision: Proporción de predicciones correctas sobre el total de predicciones hechas para una clase.
+           True Positives (TP) / (Ture Positives (TP) + False Positives (FP))
+           Un valor alto indica que las predicciones positivas son generalmente correctas.
+
+Recall: Proporción de ejemplos de una clase que el modelo pudo identificar correctamente.
+        True Positives (TP) / ( True Positives (TP) + False Negatives (FN))
+        Un valor alto indica que el modelo detecta la mayoría de los ejemplos de una clase.
+
+F1-score: Media armónica entre precisión y recall.
+          2*((Precision*Recall)/(Precision+Recall))
+          Resume el balance entre precisión y recall. Es útil cuando las clases están desbalanceadas.
+
+Support: Número total de muestras reales para cada clase en el conjunto de datos de prueba.
+'''
+def drawMetrixTable(y_pred,y_test, categories, text, accu):
+    precisions = precission(y_pred, y_test, categories)
+    recalls = recall(y_pred, y_test, categories)
+    f1_s = f1_scores(y_pred, y_test, categories)
+
+    support = {cls: np.sum(y_test == cls) for cls in categories}
+    metrics_table = pd.DataFrame({
+    ' ': categories,
+    'precision': [precisions[cls] for cls in categories],
+    'recall': [recalls[cls] for cls in categories],
+    'f1-Score': [f1_s[cls] for cls in categories],
+    'support' : [support[cls] for cls in categories]
+    })
+
+    metrics_table_str = metrics_table.to_string(
+        index=False,
+        header=[' ', 'precision', 'recall', 'f1-score', 'support'], 
+        float_format='{:.2f}'.format,
+        col_space=12
+    )
+
+    print("\n", text, accu, "\n")
+    print(metrics_table_str)
+
+
+
+def drawConfusionMatrix(y_test, y_pred, categories, model):
+    '''
+    Una matriz de confusión es una herramienta fundamental para evaluar el rendimiento de un modelo de clasificación.
+    Sirve para diagnosticar problemas de clasificación y medir la calidad de las predicciones.
+    '''
+    confusionmatrix = metrics.confusion_matrix(y_test, y_pred, labels=categories)
+    cm_display0 = metrics.ConfusionMatrixDisplay(confusion_matrix=confusionmatrix, display_labels=categories)
+    cm_display0.plot(cmap=plt.cm.Blues)
+    plt.title(model)
+    plt.show()
