@@ -69,7 +69,9 @@
     <None Include="Assets\TextMesh Pro\Resources\Shaders\TMPro.cginc" />
     <None Include="Assets\TextMesh Pro\Resources\Shaders\TMP_SDF-Mobile Overlay.shader" />
     <None Include="Assets\Karting\Art\Fonts\ApacheLicense2.0.txt" />
+    <None Include="Assets\MLModels\Propios\MLP_SKLearn.txt" />
     <None Include="Assets\TextMesh Pro\Resources\Fonts &amp; Materials\LiberationSans - OFL.txt" />
+    <None Include="Assets\MLModels\Propios\StandarScalerDataCustom.txt" />
     <None Include="Assets\TextMesh Pro\Resources\Shaders\TMP_Bitmap.shader" />
     <None Include="Assets\Karting\KartingMicrogame_README.txt" />
     <None Include="Assets\TextMesh Pro\Resources\Shaders\TMP_SDF-Surface-Mobile.shader" />

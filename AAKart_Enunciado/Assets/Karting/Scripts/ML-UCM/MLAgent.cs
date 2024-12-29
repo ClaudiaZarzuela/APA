@@ -143,8 +143,28 @@ public class MLPModel
     // TODO Implement FeedForward
     public float[] FeedForward(float[] a_input)
     {
-        float[] _feedForward = { 1, 2, 3, 4 };
-        return  _feedForward;
+        List<float[,]> thetas = mlpParameters.GetCoeff();
+        List<float[]> sesgos = mlpParameters.GetInter();
+
+        float[] _input = a_input;
+
+        for(int layer = 0; layer < thetas.Count; layer++)
+        {
+            float[] output = new float[sesgos[layer].Length];
+
+            for(int j = 0; j < output.Length; j++) {
+                float sum = 0;
+                for(int i = 0; i < _input.Length; i++) 
+                {
+                    float mult = _input[i] * thetas[layer][i,j];
+                    sum += mult;
+                }
+                output[j] = sigmoid(sum + sesgos[layer][j]);
+            }
+            _input = output;
+        }
+
+        return _input;
     }
 
     //TODO: implement the conversion from index to actions. You may need to implement several ways of
@@ -153,8 +173,18 @@ public class MLPModel
     //data.
     public Labels ConvertIndexToLabel(int index)
     {
-
-        throw new NotImplementedException();
+        //categories = ["ACCELERATE", "LEFT_ACCELERATE", "RIGHT_ACCELERATE"]
+        Labels output = Labels.NONE;
+        switch (index)
+        {
+            case 0:
+                output = Labels.ACCELERATE; break;
+            case 1:
+                output = Labels.LEFT_ACCELERATE; break;
+            case 2:
+                output = Labels.RIGHT_ACCELERATE; break;
+        }
+        return output;
     }
     public Labels Predict(float[] output)
     {

@@ -3,8 +3,8 @@ from sklearn.feature_selection import f_classif
 from sklearn import metrics
 from sklearn.preprocessing import OneHotEncoder
 import matplotlib.pyplot as plt
-#from skl2onnx import to_onnx
-#from onnx2json import convert
+from skl2onnx import to_onnx
+from onnx2json import convert
 import numpy as np
 import pandas as pd
 import pickle
@@ -38,7 +38,6 @@ def ExportAllformatsMLPSKlearn(mlp,X,picklefileName,onixFileName,jsonFileName,cu
         f.write(onx.SerializeToString())
     
     onnx_json = convert(input_onnx_file_path=onixFileName,output_json_path=jsonFileName,json_indent=2)
-    
     customFormat = ExportONNX_JSON_TO_Custom(onnx_json,mlp)
     with open(customFileName, 'w') as f:
         f.write(customFormat)
@@ -65,6 +64,7 @@ def export_to_json(model, filename):
 
     with open(filename, 'w') as f:
         json.dump(model_dict, f)
+
 def export_to_txt(model, filename):
     with open(filename, 'w') as f:
         num_layers = len(model.coefs_) + 1
@@ -82,7 +82,7 @@ def export_to_txt(model, filename):
             parameter_num += 1
 
 def cleanData(data):
-    data = data.drop(columns= ['karty', 'time'], errors='ignore')
+    data = data.drop(columns= ['kartx','karty','kartz','time'], errors='ignore')
     data = data.dropna()
 
     #Limpiar salidas que no usamos
@@ -97,11 +97,10 @@ def load_data_csv_multi(path):
     data = pd.read_csv(path)
     data = cleanData(data)
 
-    x_data = data.columns[:-1]
     X = data[data.columns[:-1]].to_numpy()
     y = data[data.columns[-1]].to_numpy() 
 
-    return X, y, x_data
+    return X, y
 
 def precission(P, Y, categories):
     precisions = {}
@@ -194,3 +193,15 @@ def drawConfusionMatrix(y_test, y_pred, categories, model):
     cm_display0.plot(cmap=plt.cm.Blues)
     plt.title(model)
     plt.show()
+
+def WriteStandardScaler(file,mean,var):
+    line = ""
+    for i in range(0,len(mean)-1):
+        line = line + str(mean[i]) + ","
+    line = line + str(mean[len(mean)-1])+ "\n"
+    for i in range(0,len(var)-1):
+        line = line + str(var[i]) + ","
+    line = line + str(var[len(var)-1])+ "\n"
+    with open(file, 'w') as f:
+        f.write(line)
+    

@@ -1,4 +1,4 @@
-from Utils import load_data_csv_multi, one_hot_encoding,drawConfusionMatrix, drawMetrixTable, accuracy
+from Utils import load_data_csv_multi, one_hot_encoding,drawConfusionMatrix, drawMetrixTable, accuracy, ExportAllformatsMLPSKlearn, WriteStandardScaler
 import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split
 from MLP import MLP_backprop_predict
@@ -8,21 +8,19 @@ from sklearn import decomposition
 from sklearn.preprocessing import StandardScaler
 from sklearn.neural_network import MLPClassifier
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.metrics import classification_report
-import pandas as pd
-from sklearn.inspection import permutation_importance
 from sklearn import tree
 from sklearn.neighbors import KNeighborsClassifier
 
 
 # LEEMOS LOS DATOS, LOS LIMPIAMOS Y SEPARAMOS EN ENTRADAS Y SALIDA -------------------------------------------------------
-x, y, x_data= load_data_csv_multi("../ML/concatenado.csv")
-x_columns = x_data # Guardamos las columnas originales para luego mostrar las predicciones de sklearn
+x, y = load_data_csv_multi("../ML/concatenado.csv")
 
 
 
 #HACEMOS UNA COPIA DE X PARA REALIZAR EL PCA SIN AFECTAR A LOS DATOS ORIGINALES
 x_pca = x.copy()
+
+
 
 # APLICAMOS EL PCA PARA REDUCIR DIMENSIONALIDAD Y MOSTRAMOS ---------------------------------------------------------------
 #EN 2D
@@ -47,6 +45,8 @@ plt.ylabel("Componente 2")
 plt.legend()
 plt.grid(True)
 plt.show()
+
+
 
 #EN 3D
 '''
@@ -77,14 +77,18 @@ ax.legend()
 plt.show()
 '''
 
+
+
 #NORMALIZAMOS LA X --------------------------------------------------------------------------------------------------------
 scaler = StandardScaler()
 x = scaler.fit_transform(x)
+WriteStandardScaler("StandarScalerDataCustom.txt",scaler.mean_,scaler.var_)
 
 
 #DIVIDIMOS LOS DATOS ------------------------------------------------------------------------------------------------------
 X_train, X_test, y_train, y_test = train_test_split(x, y, test_size=0.33, random_state=0)
 categories = ["ACCELERATE", "LEFT_ACCELERATE", "RIGHT_ACCELERATE"]
+
 
 
 #ENTRENAMOS EL MODELO CON NUESTRO MLP -------------------------------------------------------------------------------------
@@ -102,16 +106,21 @@ drawMetrixTable(y_pred_mapped, y_test, categories, "Accuracy de nuestro modelo p
 
 print("--------------------------------------------------------------------------------------------\n")
 # VERSION SKLEARN DEL MLP
-clf_0 = MLPClassifier(hidden_layer_sizes= [30,15], activation = 'logistic', alpha=0, max_iter= 500, learning_rate_init= 1, epsilon= 0.12)
-clf_0.fit(X_train, y_train)
-accu = clf_0.score(X_test, y_test)
+clf_0 = MLPClassifier(hidden_layer_sizes= [30,15], activation = 'logistic', alpha=0, max_iter= 500, learning_rate_init= 1, epsilon= 0.12, learning_rate="constant")
+clf_0.fit(X_train, y_train_one_hot)
 clf_0_Predict = clf_0.predict(X_test)
+y_pred_mapped = np.array(categories)[np.argmax(clf_0_Predict, axis=1)]
+accu = accuracy(y_pred_mapped, y_test)
+
+#EXPORTAR DATOS PARA SU USO EN UNITY
+ExportAllformatsMLPSKlearn(clf_0,X_train, "MLP_SKLearn_Pickle", "MLP_SKLearn_Onix", "MLP_SKLearn_JSON", "MLP_SKLearn.txt")
+
 
 # MATRIZ DE CONFUSIÓN
-drawConfusionMatrix(clf_0_Predict, y_test, categories, "Matriz de confusión del MLP (SKLearn)")
+drawConfusionMatrix(y_pred_mapped, y_test, categories, "Matriz de confusión del MLP (SKLearn)")
 
 #TABLA DE METRICAS
-drawMetrixTable(clf_0_Predict, y_test, categories, "Accuracy del modelo MLPClassifier (SKLearn): ", accu)
+drawMetrixTable(y_pred_mapped, y_test, categories, "Accuracy del modelo MLPClassifier (SKLearn): ", accu)
 print("\nNo se ha podido mejorar el accuracy del modelo cambiando los parametros, pero el max_iter puede reducirse a 500 con los mismos resultados")
 
 
