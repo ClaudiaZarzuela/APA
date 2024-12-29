@@ -11,6 +11,9 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn import tree
 from sklearn.neighbors import KNeighborsClassifier
 
+SHOW_CONFUSION_MATRIX = False
+SHOW_PCA = False
+EXPORT_TO_UNITY = False
 
 # LEEMOS LOS DATOS, LOS LIMPIAMOS Y SEPARAMOS EN ENTRADAS Y SALIDA -------------------------------------------------------
 x, y = load_data_csv_multi("../ML/concatenado.csv")
@@ -23,59 +26,58 @@ x_pca = x.copy()
 
 
 # APLICAMOS EL PCA PARA REDUCIR DIMENSIONALIDAD Y MOSTRAMOS ---------------------------------------------------------------
-#EN 2D
-pca = decomposition.PCA(n_components=2)
-x_pca_2D = pca.fit_transform(x_pca)
-fig = plt.figure(figsize=(8, 6))
+if SHOW_PCA:
+    #EN 2D
+    pca = decomposition.PCA(n_components=2)
+    x_pca_2D = pca.fit_transform(x_pca)
+    fig = plt.figure(figsize=(8, 6))
 
-classes = np.unique(y)
-colors = plt.cm.rainbow(np.linspace(0,1,len(classes)))
+    classes = np.unique(y)
+    colors = plt.cm.rainbow(np.linspace(0,1,len(classes)))
 
-for i, class_value in enumerate(classes):
-    plt.scatter(
-        x_pca_2D[y == class_value, 0],
-        x_pca_2D[y == class_value, 1],
-        label=f"Clase {class_value}",
-        color=colors[i],
-    )
+    for i, class_value in enumerate(classes):
+        plt.scatter(
+            x_pca_2D[y == class_value, 0],
+            x_pca_2D[y == class_value, 1],
+            label=f"Clase {class_value}",
+            color=colors[i],
+        )
 
-plt.title("Proyección PCA (2 Componentes)")
-plt.xlabel("Componente 1")
-plt.ylabel("Componente 2")
-plt.legend()
-plt.grid(True)
-plt.show()
+    plt.title("Proyección PCA (2 Componentes)")
+    plt.xlabel("Componente 1")
+    plt.ylabel("Componente 2")
+    plt.legend()
+    plt.grid(True)
+    plt.show()
 
+    #EN 3D
+    '''
+    fig = plt.figure(1, figsize=(8, 6))
+    ax = fig.add_subplot(111, projection="3d")
 
+    plt.cla()
+    pca = decomposition.PCA(n_components=3)
+    x_pca_3d = pca.fit_transform(x_pca)
 
-#EN 3D
-'''
-fig = plt.figure(1, figsize=(8, 6))
-ax = fig.add_subplot(111, projection="3d")
+    classes = np.unique(y)
+    colors = plt.cm.rainbow(np.linspace(0,1,len(classes)))
 
-plt.cla()
-pca = decomposition.PCA(n_components=3)
-x_pca_3d = pca.fit_transform(x_pca)
+    for i, class_value in enumerate(classes):
+        ax.scatter(
+            x_pca_3d[y == class_value, 0],
+            x_pca_3d[y == class_value, 1],
+            x_pca_3d[y == class_value, 2],
+            label=f"Clase {class_value}",
+            color=colors[i],
+        )
 
-classes = np.unique(y)
-colors = plt.cm.rainbow(np.linspace(0,1,len(classes)))
-
-for i, class_value in enumerate(classes):
-    ax.scatter(
-        x_pca_3d[y == class_value, 0],
-        x_pca_3d[y == class_value, 1],
-        x_pca_3d[y == class_value, 2],
-        label=f"Clase {class_value}",
-        color=colors[i],
-    )
-
-ax.set_title("Proyección PCA (3 Componentes)")
-ax.set_xlabel("Componente 1")
-ax.set_ylabel("Componente 2")
-ax.set_zlabel("Componente 3")
-ax.legend()
-plt.show()
-'''
+    ax.set_title("Proyección PCA (3 Componentes)")
+    ax.set_xlabel("Componente 1")
+    ax.set_ylabel("Componente 2")
+    ax.set_zlabel("Componente 3")
+    ax.legend()
+    plt.show()
+    '''
 
 
 
@@ -94,10 +96,11 @@ categories = ["ACCELERATE", "LEFT_ACCELERATE", "RIGHT_ACCELERATE"]
 #ENTRENAMOS EL MODELO CON NUESTRO MLP -------------------------------------------------------------------------------------
 y_train_one_hot = one_hot_encoding(y_train, categories)
 y_pred = MLP_backprop_predict(X_train,y_train_one_hot,X_test,1,0,2000,0)
+y_pred_mapped = np.array(categories)[y_pred]
 
 # MATRIZ DE CONFUSIÓN
-y_pred_mapped = np.array(categories)[y_pred]
-drawConfusionMatrix(y_pred_mapped, y_test, categories, "Matriz de confusión de nuestro MLP")
+if SHOW_CONFUSION_MATRIX:
+    drawConfusionMatrix(y_pred_mapped, y_test, categories, "Matriz de confusión de nuestro MLP")
 
 #TABLA DE METRICAS
 drawMetrixTable(y_pred_mapped, y_test, categories, "Accuracy de nuestro modelo propio MLP: ", accuracy(y_pred_mapped, y_test))
@@ -113,11 +116,12 @@ y_pred_mapped = np.array(categories)[np.argmax(clf_0_Predict, axis=1)]
 accu = accuracy(y_pred_mapped, y_test)
 
 #EXPORTAR DATOS PARA SU USO EN UNITY
-ExportAllformatsMLPSKlearn(clf_0,X_train, "MLP_SKLearn_Pickle", "MLP_SKLearn_Onix", "MLP_SKLearn_JSON", "MLP_SKLearn.txt")
-
+if EXPORT_TO_UNITY:
+    ExportAllformatsMLPSKlearn(clf_0,X_train, "MLP_SKLearn_Pickle", "MLP_SKLearn_Onix", "MLP_SKLearn_JSON", "MLP_SKLearn.txt")
 
 # MATRIZ DE CONFUSIÓN
-drawConfusionMatrix(y_pred_mapped, y_test, categories, "Matriz de confusión del MLP (SKLearn)")
+if SHOW_CONFUSION_MATRIX:
+    drawConfusionMatrix(y_pred_mapped, y_test, categories, "Matriz de confusión del MLP (SKLearn)")
 
 #TABLA DE METRICAS
 drawMetrixTable(y_pred_mapped, y_test, categories, "Accuracy del modelo MLPClassifier (SKLearn): ", accu)
@@ -133,7 +137,8 @@ accu = neigh.score(X_test, y_test)
 neighPredict = neigh.predict(X_test)
 
 # MATRIZ DE CONFUSIÓN
-drawConfusionMatrix(neighPredict, y_test, categories, "Matriz de confusión del KNN (SKLearn)")
+if SHOW_CONFUSION_MATRIX:
+    drawConfusionMatrix(neighPredict, y_test, categories, "Matriz de confusión del KNN (SKLearn)")
 
 #TABLA DE METRICAS
 drawMetrixTable(neighPredict, y_test, categories, "Accuracy del modelo KNN (SKLearn): ", accu)
@@ -148,7 +153,8 @@ y_predict = dtc.predict(X_test)
 accu = dtc.score(X_test, y_test)
 
 # MATRIZ DE CONFUSIÓN
-drawConfusionMatrix(y_predict, y_test, categories, "Matriz de confusión del modelo de Arboles de Decision (SKLearn)")
+if SHOW_CONFUSION_MATRIX:
+    drawConfusionMatrix(y_predict, y_test, categories, "Matriz de confusión del modelo de Arboles de Decision (SKLearn)")
 
 #TABLA DE METRICAS
 drawMetrixTable(y_predict, y_test, categories, "Accuracy del modelo con Arboles de Decision (SKLearn): ", accu)
@@ -163,7 +169,8 @@ y_predict = rf.predict(X_test)
 accu = rf.score(X_test, y_test)
 
 # MATRIZ DE CONFUSIÓN
-drawConfusionMatrix(y_predict, y_test, categories, "Matriz de confusión del Random Forest (SKLearn)")
+if SHOW_CONFUSION_MATRIX:
+    drawConfusionMatrix(y_predict, y_test, categories, "Matriz de confusión del Random Forest (SKLearn)")
 
 #TABLA DE METRICAS
 drawMetrixTable(y_predict, y_test, categories, "Accuracy del modelo Random Forest (SKLearn): ", accu)
