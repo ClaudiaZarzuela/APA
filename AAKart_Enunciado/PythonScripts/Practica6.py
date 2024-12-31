@@ -147,7 +147,7 @@ drawMetrixTable(neighPredict, y_test, categories, "Accuracy del modelo KNN (SKLe
 
 print("--------------------------------------------------------------------------------------------\n")
 # ARBOLES DE DECISION -----------------------------------------------------------------------------------------------------
-dtc = tree.DecisionTreeClassifier(random_state=42, criterion= 'entropy', min_samples_split = 0.1 )
+dtc = tree.DecisionTreeClassifier(random_state=0, criterion= 'entropy', min_samples_split = 0.1 )
 dtc = dtc.fit(X_train, y_train)
 y_predict = dtc.predict(X_test)
 accu = dtc.score(X_test, y_test)
@@ -163,7 +163,7 @@ drawMetrixTable(y_predict, y_test, categories, "Accuracy del modelo con Arboles 
 
 print("--------------------------------------------------------------------------------------------\n")
 # RANDOM FOREST -----------------------------------------------------------------------------------------------------------
-rf = RandomForestClassifier(n_estimators=500, random_state=0, min_samples_split= 0.1)
+rf = RandomForestClassifier(n_estimators=500, criterion='entropy', max_depth=None, min_samples_split=0.1, min_samples_leaf=0.1, max_features='sqrt', max_leaf_nodes=None, min_impurity_decrease=0.0, bootstrap=True, oob_score=False, random_state=0, class_weight=None) #(n_estimators=500, random_state=0, min_samples_split= 0.1)
 rf.fit(X_train, y_train)
 y_predict = rf.predict(X_test)
 accu = rf.score(X_test, y_test)
@@ -179,4 +179,4 @@ print("\nLos modelos tiene buenas salidas para las clases ACCELERATE y LEFT_ACCE
 
 print("--------------------------------------------------------------------------------------------\n")
 
-print("Los modelos que mejor se adaptan a esta práctica son MLP y RandomForest, \naunque especialmente éste último, ya que destaca por su habilidad de interpretar \nrelaciones no lineales y es robusto frente al ruido. Estas dos características \nestán muy presentes en los datos de esta práctica por lo que KNN y DecisionTree, \ndos modelos altamente susceptibles a ellas, no serían apropiados.\n")
+print("Los modelos que elegiríamos para esta práctica podrían ser KNN y RandomForest, especialmente \néste último, ya que destaca por su habilidad de interpretar relaciones no lineales y es \nrobusto frente al ruido, aunque es más opaco (menos interpretable). Por otro lado, \nKNN es fácil de implementar y es una caja blanca, pero puede ser susceptible al ruido.\n")
