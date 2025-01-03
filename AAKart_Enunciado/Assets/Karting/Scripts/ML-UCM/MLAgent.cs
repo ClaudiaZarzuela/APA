@@ -1,7 +1,10 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Globalization;
+using System.IO;
 using System.Linq;
+using System.Security.Cryptography;
 using UnityEngine;
 
 public class StandarScaler
@@ -37,6 +40,29 @@ public class StandarScaler
         }
         return result;
     }
+}
+
+public class KNNParameters
+{
+    private List<float[]> trainingData; 
+    private List<string> trainingLabels;
+    private int k;
+
+    public KNNParameters()
+    {
+        trainingData = new List<float[]>();
+        trainingLabels = new List<string>();
+        k = 0;
+    }
+
+    public void SetK(int neighbors){ k = neighbors;}
+    public int GetK() { return k; }
+
+    public void AddTrainingData(float[] data) { trainingData.Add(data); }
+    public List<float[]> GetTrainingData() { return trainingData; }
+
+    public void AddTrainingLabel(string label) {  trainingLabels.Add(label);}
+    public List<string> GetTrainingLabel() { return trainingLabels; }
 }
 public class MLPParameters
 {
@@ -86,19 +112,93 @@ public class MLPParameters
     }
 }
 
-public class MLPModel
+public class MLModelBase
 {
-    MLPParameters mlpParameters;
-    int[] indicesToRemove;
-    StandarScaler standarScaler;
-    public MLPModel(MLPParameters p, int[] itr, StandarScaler ss)
+    protected int[] indicesToRemove;
+    protected StandarScaler standarScaler;
+
+    public MLModelBase(int[] itr, StandarScaler ss)
     {
-        mlpParameters = p;
         indicesToRemove = itr;
         standarScaler = ss;
     }
 
-   
+    public float[] ConvertPerceptionToInput(Perception p, Transform transform)
+    {
+        Parameters parameters = Record.ReadParameters(9, Time.timeSinceLevelLoad, p, transform);
+        float[] input = parameters.ConvertToFloatArrat();
+        float[] a_input = input.Where((value, index) => !indicesToRemove.Contains(index)).ToArray();
+        a_input = standarScaler.Transform(a_input);
+        return a_input;
+    }
+}
+
+public class KNNModel: MLModelBase
+{
+    public KNNParameters knnParameters;
+
+    public KNNModel(KNNParameters p, int[] itr, StandarScaler ss) : base(itr, ss) {
+        knnParameters = p;
+    }
+
+    public float EuclideanDistance(float[] a, float[] b)
+    {
+        float sum = 0; 
+        for(int i = 0; i < a.Length; i++) {
+            float diff = a[i] - b[i];
+            sum += diff * diff;
+        }
+
+        return Mathf.Sqrt(sum);
+    }
+
+    public Labels Predict(float[] input)
+    {
+        var distances = new List<(float distance, Labels label)>();
+
+        for (int i = 0; i < knnParameters.GetTrainingData().Count; i++)
+        {
+            float[] data = knnParameters.GetTrainingData()[i];
+            string label = knnParameters.GetTrainingLabel()[i];
+            float distance = EuclideanDistance(input, data);
+          
+            distances.Add((distance, ConvertIndexToLabel(label)));
+        }
+
+        var nearestNeighbors = distances.OrderBy(x => x.distance).Take(knnParameters.GetK()).ToList();
+
+        var groupedLabels = nearestNeighbors
+            .GroupBy(x => x.label)
+            .OrderByDescending(g => g.Count())
+            .First();
+
+        Labels predictedLabel = groupedLabels.Key;
+
+        return predictedLabel;
+    }
+
+    public Labels ConvertIndexToLabel(string index)
+    {
+        Labels output = Labels.NONE;
+        switch (index)
+        {
+            case "ACCELERATE":
+                output = Labels.ACCELERATE; break;
+            case "LEFT_ACCELERATE":
+                output = Labels.LEFT_ACCELERATE; break;
+            case "RIGHT_ACCELERATE":
+                output = Labels.RIGHT_ACCELERATE; break;
+        }
+        return output;
+    }
+}
+public class MLPModel : MLModelBase
+{
+    public MLPParameters mlpParameters;
+    public MLPModel(MLPParameters p, int[] itr, StandarScaler ss) : base(itr, ss) {
+        mlpParameters = p;
+    }
+
     private float sigmoid(float z)
     {
         return 1f / (1f + Mathf.Exp(-z));
@@ -129,15 +229,6 @@ public class MLPModel
         float diff = Mathf.Abs(acc - accuracy);
         Debug.Log("Accuracy " + acc + " Accuracy espected " + accuracy + " goalds " + goals + " Examples " + parameters.Count + " Difference "+diff);
         return diff < aceptThreshold;
-    }
-
-    public float[] ConvertPerceptionToInput(Perception p, Transform transform)
-    {
-        Parameters parameters = Record.ReadParameters(9, Time.timeSinceLevelLoad, p, transform);
-        float[] input = parameters.ConvertToFloatArrat();
-        float[] a_input = input.Where((value, index) => !indicesToRemove.Contains(index)).ToArray();
-        a_input = standarScaler.Transform(a_input);
-        return a_input;
     }
 
     // TODO Implement FeedForward
@@ -197,7 +288,6 @@ public class MLPModel
     public int GetIndexMaxValue(float[] output, out float max)
     {
         max = output[0];
-        max = output[0];
         int index = 0;
         for (int i = 1; i < output.Length; i++)
         {
@@ -213,7 +303,7 @@ public class MLPModel
 
 public class MLAgent : MonoBehaviour
 {
-    public enum ModelType { MLP = 0 }
+    public enum ModelType { MLP = 0, KNN = 1 }
     public TextAsset text;
     public ModelType model;
     public bool agentEnable;
@@ -226,6 +316,9 @@ public class MLAgent : MonoBehaviour
 
     private MLPParameters mlpParameters;
     private MLPModel mlpModel;
+
+    private KNNParameters knnParameters;
+    private KNNModel knnModel;
     private Perception perception;
 
     // Start is called before the first frame update
@@ -240,6 +333,7 @@ public class MLAgent : MonoBehaviour
                 mlpParameters = LoadParameters(file);
                 StandarScaler ss = new StandarScaler(standarScaler.text);
                 mlpModel = new MLPModel(mlpParameters, indexToRemove, ss);
+                Debug.Log("Parameters loaded " + mlpParameters);
                 if (testFeedForward)
                 {
                     float acc;
@@ -253,11 +347,16 @@ public class MLAgent : MonoBehaviour
                     }
                 }
             }
-            Debug.Log("Parameters loaded " + mlpParameters);
+            else if(model == ModelType.KNN)
+            {
+                knnParameters = LoadParametersKNN(file);
+                StandarScaler ss = new StandarScaler(standarScaler.text);
+                knnModel = new KNNModel(knnParameters, indexToRemove, ss);
+            }
+           
             perception = GetComponent<Perception>();
         }
     }
-
 
 
     public KartGame.KartSystems.InputData AgentInput()
@@ -267,10 +366,16 @@ public class MLAgent : MonoBehaviour
         switch (model)
         {
             case ModelType.MLP:
-                float[] X = this.mlpModel.ConvertPerceptionToInput(perception, this.transform);
+                float[] X = mlpModel.ConvertPerceptionToInput(perception, this.transform);
                 float[] outputs = this.mlpModel.FeedForward(X);
                 label = this.mlpModel.Predict(outputs);
                 break;
+
+            case ModelType.KNN:
+                float[] X_KNN = knnModel.ConvertPerceptionToInput(perception, this.transform);
+                label = this.knnModel.Predict(X_KNN);
+                break;
+
         }
         KartGame.KartSystems.InputData input = Record.ConvertLabelToInput(label);
         return input;
@@ -312,6 +417,67 @@ public class MLAgent : MonoBehaviour
         }
         return result;
     }
+
+    public static KNNParameters LoadParametersKNN(string file)
+    {
+        KNNParameters parameters = new KNNParameters();
+
+        string[] lines = file.Split("\n");
+        bool readingXTrain = false;
+        bool readingYTrain = false;
+
+        string val = "";
+        string name = "";
+
+        for (int i = 0; i < lines.Length; i++)
+        {
+            string line = lines[i].Trim();
+
+            if (!string.IsNullOrEmpty(line))
+            {
+                if (!readingXTrain && !readingYTrain)
+                {
+                    string[] nameValue = line.Split(":");
+
+                    if (nameValue.Length == 2)
+                    {
+                        name = nameValue[0].Trim();
+                        val = nameValue[1].Trim();
+
+                        if (name == "n_neighbors")
+                        {
+                            parameters.SetK(int.Parse(val));
+                        }
+                    }
+                }
+                if (line.StartsWith("X_train"))
+                {
+                    readingXTrain = true;
+                    readingYTrain = false;
+                }
+                else if (line.StartsWith("y_train"))
+                {
+                    readingXTrain = false;
+                    readingYTrain = true;
+                }
+                else if (readingXTrain)
+                {
+                    float[] dataRow = line.Split(',')
+                        .Select(s => float.Parse(s.Replace(',', '.'), CultureInfo.InvariantCulture)) 
+                        .ToArray();
+                    parameters.AddTrainingData(dataRow);
+                }
+
+                else if (readingYTrain)
+                {
+                    parameters.AddTrainingLabel(line.Trim());
+                }
+            }
+        }
+
+        return parameters;
+    }
+
 
     public static MLPParameters LoadParameters(string file)
     {

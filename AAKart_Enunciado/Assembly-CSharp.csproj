@@ -74,6 +74,7 @@
     <None Include="Assets\MLModels\Propios\StandarScalerDataCustom.txt" />
     <None Include="Assets\TextMesh Pro\Resources\Shaders\TMP_Bitmap.shader" />
     <None Include="Assets\Karting\KartingMicrogame_README.txt" />
+    <None Include="Assets\MLModels\Propios\KNN_SKLearn.txt" />
     <None Include="Assets\TextMesh Pro\Resources\Shaders\TMP_SDF-Surface-Mobile.shader" />
     <None Include="Assets\MLModels\model.custom.ml.txt" />
     <None Include="Assets\TextMesh Pro\Resources\Shaders\TMP_SDF-Surface.shader" />

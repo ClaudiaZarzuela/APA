@@ -10,6 +10,18 @@ import pandas as pd
 import pickle
 import json
 
+def ExportKNNModel(knn, X_train, y_train, filename):
+    with open(filename, 'w') as f:
+        f.write(f"n_neighbors:{knn.n_neighbors}\n")
+        
+        f.write("X_train:\n")
+        for row in X_train:
+            f.write(','.join(map(str, row)) + '\n')
+
+        f.write("y_train:\n")
+        for label in y_train:
+            f.write(str(label) + '\n')
+            
 
 def ExportONNX_JSON_TO_Custom(onnx_json,mlp):
     graphDic = onnx_json["graph"]

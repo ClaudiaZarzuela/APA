@@ -1,4 +1,4 @@
-from Utils import load_data_csv_multi, one_hot_encoding,drawConfusionMatrix, drawMetrixTable, accuracy, ExportAllformatsMLPSKlearn, WriteStandardScaler
+from Utils import load_data_csv_multi, one_hot_encoding,drawConfusionMatrix, drawMetrixTable, accuracy, ExportAllformatsMLPSKlearn, WriteStandardScaler, ExportKNNModel
 import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split
 from MLP import MLP_backprop_predict
@@ -136,6 +136,10 @@ neigh.fit(X_train, y_train)
 accu = neigh.score(X_test, y_test)
 neighPredict = neigh.predict(X_test)
 
+#EXPORTAR DATOS PARA SU USO EN UNITY
+if EXPORT_TO_UNITY:
+    ExportKNNModel(neigh, X_train, y_train, "KNN_SKLearn.txt")
+
 # MATRIZ DE CONFUSIÓN
 if SHOW_CONFUSION_MATRIX:
     drawConfusionMatrix(neighPredict, y_test, categories, "Matriz de confusión del KNN (SKLearn)")
@@ -163,7 +167,7 @@ drawMetrixTable(y_predict, y_test, categories, "Accuracy del modelo con Arboles 
 
 print("--------------------------------------------------------------------------------------------\n")
 # RANDOM FOREST -----------------------------------------------------------------------------------------------------------
-rf = RandomForestClassifier(n_estimators=500, criterion='entropy', max_depth=None, min_samples_split=0.1, min_samples_leaf=0.1, max_features='sqrt', max_leaf_nodes=None, min_impurity_decrease=0.0, bootstrap=True, oob_score=False, random_state=0, class_weight=None) #(n_estimators=500, random_state=0, min_samples_split= 0.1)
+rf = RandomForestClassifier(n_estimators=500, random_state=0, min_samples_split= 0.1, max_depth=6)
 rf.fit(X_train, y_train)
 y_predict = rf.predict(X_test)
 accu = rf.score(X_test, y_test)
@@ -175,7 +179,7 @@ if SHOW_CONFUSION_MATRIX:
 #TABLA DE METRICAS
 drawMetrixTable(y_predict, y_test, categories, "Accuracy del modelo Random Forest (SKLearn): ", accu)
 print("\nLos modelos tiene buenas salidas para las clases ACCELERATE y LEFT_ACCELERATE,\npero bajas con la clase RIGHT_ACCELERATE, probablemente porque tiene muy pocas muestras\n")
-
+#Explicar diferencia de resultados entre tener posicion y no tenerla
 
 print("--------------------------------------------------------------------------------------------\n")
 
