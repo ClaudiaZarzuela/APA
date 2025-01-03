@@ -16,7 +16,7 @@ SHOW_PCA = False
 EXPORT_TO_UNITY = False
 
 # LEEMOS LOS DATOS, LOS LIMPIAMOS Y SEPARAMOS EN ENTRADAS Y SALIDA -------------------------------------------------------
-x, y = load_data_csv_multi("../ML/concatenado.csv")
+x, y = load_data_csv_multi("./ML/concatenado.csv")
 
 
 
@@ -179,7 +179,7 @@ if SHOW_CONFUSION_MATRIX:
 #TABLA DE METRICAS
 drawMetrixTable(y_predict, y_test, categories, "Accuracy del modelo Random Forest (SKLearn): ", accu)
 print("\nLos modelos tiene buenas salidas para las clases ACCELERATE y LEFT_ACCELERATE,\npero bajas con la clase RIGHT_ACCELERATE, probablemente porque tiene muy pocas muestras\n")
-#Explicar diferencia de resultados entre tener posicion y no tenerla
+print("\nAnteriormente, usabamos la posicion del kart como parte de los datos de entrada \ndel modelo, y las accuracies de los distintos modelos rondaban los 0'80. Sin embargo, \nquisimos generalizarlo para que nuestro coche no aprendiese a conducir *ese* \ncircuito, sino a conducir en general, por lo que decidimos quitarlo. Al haber reducido \nlos datos de entrada, las accuracies de nuestros modelos han bajado a alrededor del \n0'77, lo cual es una pérdida que asumimos a cambio de un modelo más general.\n")
 
 print("--------------------------------------------------------------------------------------------\n")
 
